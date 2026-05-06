@@ -1,0 +1,50 @@
+"""위치 요청, 승인, 거절, 30분 미응답 자동 공유 서비스를 정의한다."""
+
+from datetime import datetime
+
+from app.domain.location import LocationRequest, LocationShareRecord
+from app.external.location_provider_client import LocationProviderClient
+from app.repository.connection_repository import ConnectionRepository
+from app.repository.location_repository import LocationRepository
+from app.repository.profile_repository import ProfileRepository
+from app.service.notification_service import NotificationService
+
+LOCATION_REQUEST_TIMEOUT_MINUTES = 30
+
+
+class LocationShareService:
+    """위치 요청, 승인, 미응답 자동 공유, 도움 요청 위치 공유를 처리한다."""
+
+    def __init__(
+        self,
+        profile_repository: ProfileRepository,
+        connection_repository: ConnectionRepository,
+        location_repository: LocationRepository,
+        location_provider: LocationProviderClient,
+        notification_service: NotificationService,
+    ) -> None:
+        self.profile_repository = profile_repository
+        self.connection_repository = connection_repository
+        self.location_repository = location_repository
+        self.location_provider = location_provider
+        self.notification_service = notification_service
+
+    def request_location(self, guardian_user_id: str, protected_user_id: str, requested_at: datetime) -> LocationRequest:
+        """보호자가 보호대상자에게 위치 공유 요청을 보낸다."""
+        raise NotImplementedError
+
+    def approve_location_request(self, request_id: str, protected_user_id: str) -> LocationShareRecord:
+        """보호대상자의 승인 후 현재 위치를 보호자에게 공유한다."""
+        raise NotImplementedError
+
+    def reject_location_request(self, request_id: str, protected_user_id: str) -> LocationRequest:
+        """보호대상자의 거절 후 위치 요청을 미공유 상태로 처리한다."""
+        raise NotImplementedError
+
+    def auto_share_after_timeout(self, request_id: str, now: datetime) -> LocationShareRecord | None:
+        """30분 미응답과 자동 공유 설정을 확인해 위치를 공유한다."""
+        raise NotImplementedError
+
+    def share_for_help_request(self, guardian_user_id: str, protected_user_id: str) -> LocationShareRecord:
+        """도움 요청 시 현재 위치를 즉시 보호자에게 공유한다."""
+        raise NotImplementedError

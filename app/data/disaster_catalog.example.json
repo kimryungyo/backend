@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-05-06T00:00:00Z",
+  "disasters": [
+    {
+      "disaster_type": "heat_wave",
+      "display_name": "폭염",
+      "checklist_rules": [
+        {
+          "rule_id": "heat-wave-elderly-drink-water",
+          "category": "elderly",
+          "title": "물 마시기",
+          "interval_minutes": 180,
+          "enabled": true
+        }
+      ],
+      "guide_rules": [
+        {
+          "guide_id": "heat-wave-elderly-basic-guide",
+          "category": "elderly",
+          "enabled": true,
+          "pages": [
+            {
+              "page_no": 1,
+              "text": "시원한 곳으로 이동하세요.",
+              "image_url": "https://example.com/images/heat-wave/cool-place.png"
+            },
+            {
+              "page_no": 2,
+              "text": "물을 천천히 자주 마시세요.",
+              "image_url": "https://example.com/images/heat-wave/drink-water.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "disaster_type": "fire",
+      "display_name": "화재",
+      "checklist_rules": [],
+      "guide_rules": [
+        {
+          "guide_id": "fire-elderly-basic-guide",
+          "category": "elderly",
+          "enabled": true,
+          "pages": [
+            {
+              "page_no": 1,
+              "text": "연기가 보이면 낮은 자세로 이동하세요.",
+              "image_url": "https://example.com/images/fire/low-posture.png"
+            },
+            {
+              "page_no": 2,
+              "text": "엘리베이터를 타지 말고 계단으로 대피하세요.",
+              "image_url": "https://example.com/images/fire/stairs.png"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

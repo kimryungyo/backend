@@ -1,0 +1,8 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - DISASTER_CATALOG_PATH=/app/app/data/disaster_catalog.example.json
