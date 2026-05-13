@@ -9,6 +9,11 @@ class UserRepository(ABC):
     """사용자 계정과 역할 정보를 저장하고 조회한다."""
 
     @abstractmethod
+    def find_by_id(self, user_id: str) -> User | None:
+        """시스템 내부 사용자 ID로 가입 사용자를 조회한다."""
+        raise NotImplementedError
+
+    @abstractmethod
     def find_by_kakao_id(self, kakao_id: str) -> User | None:
         """카카오 사용자 식별자로 가입 사용자를 조회한다."""
         raise NotImplementedError
