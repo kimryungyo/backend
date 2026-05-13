@@ -3,10 +3,28 @@
 from dataclasses import dataclass
 
 from app.config.settings import Settings
+from app.database.mysql import MySQLPool
+from app.external.concrete_clients import (
+    EmptyDisasterInfoClient,
+    KakaoOAuthHttpClient,
+    NoopPushNotificationClient,
+    UnavailableLocationProviderClient,
+)
 from app.external.disaster_info_client import DisasterInfoClient
 from app.external.kakao_oauth_client import KakaoOAuthClient
 from app.external.location_provider_client import LocationProviderClient
 from app.external.push_notification_client import PushNotificationClient
+from app.repository.memory_repository import (
+    InMemoryChecklistRepository,
+    InMemoryConnectionRepository,
+    InMemoryDisasterEventRepository,
+    InMemoryLocationRepository,
+    InMemoryNotificationRepository,
+    InMemoryProfileRepository,
+    InMemorySafetyRepository,
+    InMemoryUserRepository,
+    JsonDisasterCatalogRepository,
+)
 from app.repository.checklist_repository import ChecklistRepository
 from app.repository.connection_repository import ConnectionRepository
 from app.repository.disaster_repository import DisasterCatalogRepository, DisasterEventRepository
@@ -32,6 +50,7 @@ class AppContext:
     """FastAPI dependency로 주입할 애플리케이션 의존성 묶음이다."""
 
     settings: Settings  # 환경변수와 서버 설정 값
+    mysql_pool: MySQLPool | None = None  # MySQL connection pool
     kakao_oauth_client: KakaoOAuthClient | None = None  # 카카오 OAuth 연동 클라이언트
     push_notification_client: PushNotificationClient | None = None  # 푸시 알림 연동 클라이언트
     location_provider_client: LocationProviderClient | None = None  # 위치 조회 연동 클라이언트
@@ -59,4 +78,75 @@ class AppContext:
 
 def create_app_context(settings: Settings | None = None) -> AppContext:
     """애플리케이션 시작 시 DI context를 생성한다."""
-    return AppContext(settings=settings or Settings())
+    settings = settings or Settings()
+
+    kakao_oauth_client = KakaoOAuthHttpClient(settings)
+    push_notification_client = NoopPushNotificationClient()
+    location_provider_client = UnavailableLocationProviderClient()
+    disaster_info_client = EmptyDisasterInfoClient()
+
+    user_repository = InMemoryUserRepository()
+    profile_repository = InMemoryProfileRepository()
+    connection_repository = InMemoryConnectionRepository()
+    safety_repository = InMemorySafetyRepository()
+    disaster_catalog_repository = JsonDisasterCatalogRepository()
+    disaster_event_repository = InMemoryDisasterEventRepository()
+    checklist_repository = InMemoryChecklistRepository()
+    location_repository = InMemoryLocationRepository()
+    notification_repository = InMemoryNotificationRepository()
+
+    notification_service = NotificationService(notification_repository, push_notification_client)
+    auth_service = AuthService(kakao_oauth_client, user_repository)
+    profile_service = ProfileService(profile_repository)
+    connection_service = ConnectionService(
+        user_repository,
+        connection_repository,
+        notification_service,
+    )
+    safety_check_service = SafetyCheckService(
+        safety_repository,
+        connection_repository,
+        notification_service,
+    )
+    disaster_catalog_service = DisasterCatalogService(disaster_catalog_repository)
+    checklist_service = ChecklistService(checklist_repository, disaster_catalog_service)
+    action_guide_service = ActionGuideService(disaster_catalog_service)
+    location_share_service = LocationShareService(
+        profile_repository,
+        connection_repository,
+        location_repository,
+        location_provider_client,
+        notification_service,
+    )
+    help_request_service = HelpRequestService(
+        connection_repository,
+        location_share_service,
+        notification_service,
+    )
+
+    return AppContext(
+        settings=settings,
+        kakao_oauth_client=kakao_oauth_client,
+        push_notification_client=push_notification_client,
+        location_provider_client=location_provider_client,
+        disaster_info_client=disaster_info_client,
+        user_repository=user_repository,
+        profile_repository=profile_repository,
+        connection_repository=connection_repository,
+        safety_repository=safety_repository,
+        disaster_catalog_repository=disaster_catalog_repository,
+        disaster_event_repository=disaster_event_repository,
+        checklist_repository=checklist_repository,
+        location_repository=location_repository,
+        notification_repository=notification_repository,
+        auth_service=auth_service,
+        profile_service=profile_service,
+        connection_service=connection_service,
+        safety_check_service=safety_check_service,
+        disaster_catalog_service=disaster_catalog_service,
+        checklist_service=checklist_service,
+        action_guide_service=action_guide_service,
+        location_share_service=location_share_service,
+        help_request_service=help_request_service,
+        notification_service=notification_service,
+    )
