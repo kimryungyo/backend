@@ -95,7 +95,11 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
     location_repository = InMemoryLocationRepository()
     notification_repository = InMemoryNotificationRepository()
 
-    notification_service = NotificationService(notification_repository, push_notification_client)
+    notification_service = NotificationService(
+        notification_repository,
+        user_repository,
+        push_notification_client,
+    )
     auth_service = AuthService(kakao_oauth_client, user_repository)
     profile_service = ProfileService(profile_repository)
     connection_service = ConnectionService(
