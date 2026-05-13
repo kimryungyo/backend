@@ -1,5 +1,7 @@
 """서비스 이벤트를 푸시 알림으로 변환하고 전송하는 서비스를 정의한다."""
 
+from datetime import datetime, timezone
+
 from app.domain.connection import ConnectionRequest
 from app.domain.help_request import HelpRequestRecord
 from app.domain.location import LocationRequest
@@ -17,7 +19,10 @@ class NotificationService:
 
     def notify(self, message: NotificationMessage) -> None:
         """알림 메시지를 저장한 뒤 푸시 알림 서비스로 전송한다."""
-        raise NotImplementedError
+        self.notification_repository.save(message)
+        self.push_client.send(message)
+        message.mark_sent(datetime.now(timezone.utc))
+        self.notification_repository.save(message)
 
     def notify_connection_request(self, request: ConnectionRequest) -> None:
         """연결 요청을 받은 사용자에게 알림을 보낸다."""
