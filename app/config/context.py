@@ -110,6 +110,7 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
     safety_check_service = SafetyCheckService(
         safety_repository,
         connection_repository,
+        user_repository,
         notification_service,
     )
     disaster_catalog_service = DisasterCatalogService(disaster_catalog_repository)
