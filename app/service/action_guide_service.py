@@ -19,4 +19,7 @@ class ActionGuideService:
         categories: list[ProtectedCategory],
     ) -> list[ActionGuideRule]:
         """재난 종류와 보호대상자 분류에 맞는 대처법 안내 페이지를 조회한다."""
-        raise NotImplementedError
+        definition = catalog.find_definition(disaster_type)
+        if not definition:
+            return []
+        return definition.guide_rules_for(categories)
