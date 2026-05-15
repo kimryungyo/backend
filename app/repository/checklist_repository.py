@@ -33,14 +33,18 @@ class MySQLChecklistRepository(ChecklistRepository):
                 (record_id, protected_user_id, disaster_event_id, checklist_rule_id, completed_at)
             VALUES (%s, %s, %s, %s, %s)
         """
-        with self._pool.cursor() as cursor:
-            cursor.execute(sql, (
-                record.record_id,
-                record.protected_user_id,
-                record.disaster_event_id,
-                record.checklist_rule_id,
-                record.completed_at,
-            ))
+        with self._pool.transaction() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(sql, (
+                    record.record_id,
+                    record.protected_user_id,
+                    record.disaster_event_id,
+                    record.checklist_rule_id,
+                    record.completed_at,
+                ))
+            finally:
+                cursor.close()
 
     def list_recent_records(self, protected_user_id: str, limit: int = 3) -> list[ChecklistRecord]:
         """보호자의 조회를 위해 최근 재난 체크리스트 기록을 조회한다."""
