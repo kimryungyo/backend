@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     app_env: str = Field(default="local", description="애플리케이션 실행 환경")
     app_name: str = Field(default="재난안심 API", description="FastAPI 앱 이름")
+    cors_origins: list[str] = Field(default=["*"], description="CORS 허용 오리진 목록")
     disaster_catalog_path: Path = Field(
         default=Path("app/data/disaster_catalog.example.json"),
         description="재난 카탈로그 JSON 파일 경로",
