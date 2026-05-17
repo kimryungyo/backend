@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime, time, timezone
 
-from app.domain.enums import NotificationType, SafetyStatus
+from app.domain.enums import SafetyStatus
 from app.domain.safety import SafetyCheckRecord, SafetySchedule
 from app.repository.connection_repository import ConnectionRepository
 from app.repository.safety_repository import SafetyRepository
@@ -106,12 +106,9 @@ class SafetyCheckService:
             # 4. 미응답 시 보호자에게 알림 발송
             connection = self.connection_repository.find_active_by_protected(protected_user_id)
             if connection:
-                self.notification_service.send_notification(
-                    user_id=connection.guardian_user_id,
-                    notification_type=NotificationType.SAFETY_NOT_RESPONDED,
-                    title="안부 미응답 알림",
-                    content="보호대상자가 설정된 시간에 안부를 확인하지 않았습니다. 확인이 필요합니다.",
-                    related_id=protected_user_id,
+                self.notification_service.notify_safety_nonresponse(
+                    protected_user_id=protected_user_id,
+                    guardian_user_id=connection.guardian_user_id,
                 )
 
         return is_unresponsive
