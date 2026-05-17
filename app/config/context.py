@@ -114,7 +114,11 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
         notification_service,
     )
     disaster_catalog_service = DisasterCatalogService(disaster_catalog_repository)
-    checklist_service = ChecklistService(checklist_repository, disaster_catalog_service)
+    checklist_service = ChecklistService(
+        checklist_repository,
+        disaster_catalog_service,
+        connection_repository,
+    )
     action_guide_service = ActionGuideService(disaster_catalog_service)
     location_share_service = LocationShareService(
         profile_repository,

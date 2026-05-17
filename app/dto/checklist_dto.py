@@ -34,3 +34,11 @@ class ChecklistRecordResponse(BaseModel):
     disaster_event_id: str
     checklist_rule_id: str
     completed_at: datetime
+
+
+class ChecklistRecordListResponse(BaseModel):
+    """최근 체크리스트 수행 기록 목록을 반환한다."""
+
+    protected_user_id: str
+    has_records: bool
+    records: list[ChecklistRecordResponse]

@@ -7,15 +7,22 @@ from app.domain.checklist import ChecklistRecord, ChecklistRule
 from app.domain.disaster import DisasterCatalog
 from app.domain.enums import ProtectedCategory
 from app.repository.checklist_repository import ChecklistRepository
+from app.repository.connection_repository import ConnectionRepository
 from app.service.disaster_catalog_service import DisasterCatalogService
 
 
 class ChecklistService:
     """재난 상황에서 보호대상자에게 필요한 체크리스트를 제공하고 기록한다."""
 
-    def __init__(self, checklist_repository: ChecklistRepository, catalog_service: DisasterCatalogService) -> None:
+    def __init__(
+        self,
+        checklist_repository: ChecklistRepository,
+        catalog_service: DisasterCatalogService,
+        connection_repository: ConnectionRepository,
+    ) -> None:
         self.checklist_repository = checklist_repository
         self.catalog_service = catalog_service
+        self.connection_repository = connection_repository
 
     def list_checklist_rules(
         self,
@@ -53,3 +60,16 @@ class ChecklistService:
         self.checklist_repository.save_record(record)
 
         return record
+
+    def list_recent_records_for_guardian(
+        self,
+        guardian_user_id: str,
+        protected_user_id: str,
+        limit: int = 3,
+    ) -> list[ChecklistRecord]:
+        """연결된 보호자가 보호대상자의 최근 체크리스트 수행 기록을 조회한다."""
+        connection = self.connection_repository.find_active_by_protected(protected_user_id)
+        if not connection or not connection.connects(guardian_user_id, protected_user_id):
+            raise PermissionError("guardian is not connected to protected user")
+
+        return self.checklist_repository.list_recent_records(protected_user_id, limit=limit)
