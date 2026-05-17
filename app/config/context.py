@@ -131,8 +131,14 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
         checklist_repository,
         disaster_catalog_service,
         connection_repository,
+        profile_repository,
+        disaster_event_repository,
     )
-    action_guide_service = ActionGuideService(disaster_catalog_service)
+    action_guide_service = ActionGuideService(
+        disaster_catalog_service,
+        profile_repository,
+        disaster_event_repository,
+    )
     location_share_service = LocationShareService(
         profile_repository,
         connection_repository,

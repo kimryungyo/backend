@@ -4,9 +4,9 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_checklist_service, get_current_user
+from app.api.dependencies import get_checklist_service, get_context, get_current_user
+from app.config.context import AppContext
 from app.domain.checklist import ChecklistRecord
-from app.domain.enums import ProtectedCategory
 from app.domain.user import User
 from app.dto.checklist_dto import (
     ChecklistCompleteRequest,
@@ -27,11 +27,20 @@ def _to_record_response(record: ChecklistRecord) -> ChecklistRecordResponse:
 @router.get("/rules", response_model=list[ChecklistRuleResponse])
 def list_checklist_rules(
     disaster_type: str,
-    categories: list[ProtectedCategory],
+    protected_user_id: str,
     service: ChecklistService = Depends(get_checklist_service),
+    context: AppContext = Depends(get_context),
 ) -> list[ChecklistRuleResponse]:
-    """재난 종류와 보호대상자 분류에 맞는 체크리스트를 조회한다."""
-    raise NotImplementedError
+    """현재 재난 상황과 보호대상자 프로필에 맞는 체크리스트를 조회한다."""
+    try:
+        catalog = service.catalog_service.load_catalog(context.settings.disaster_catalog_path)
+        rules = service.list_checklist_rules(catalog, disaster_type, protected_user_id)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Protected profile not found",
+        ) from exc
+    return [ChecklistRuleResponse(**asdict(rule)) for rule in rules]
 
 
 @router.post("/records/{protected_user_id}", response_model=ChecklistRecordResponse)

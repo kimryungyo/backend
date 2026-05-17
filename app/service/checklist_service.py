@@ -5,9 +5,10 @@ from datetime import datetime
 
 from app.domain.checklist import ChecklistRecord, ChecklistRule
 from app.domain.disaster import DisasterCatalog
-from app.domain.enums import ProtectedCategory
 from app.repository.checklist_repository import ChecklistRepository
 from app.repository.connection_repository import ConnectionRepository
+from app.repository.disaster_repository import DisasterEventRepository
+from app.repository.profile_repository import ProfileRepository
 from app.service.disaster_catalog_service import DisasterCatalogService
 
 
@@ -19,25 +20,32 @@ class ChecklistService:
         checklist_repository: ChecklistRepository,
         catalog_service: DisasterCatalogService,
         connection_repository: ConnectionRepository,
+        profile_repository: ProfileRepository,
+        disaster_event_repository: DisasterEventRepository,
     ) -> None:
         self.checklist_repository = checklist_repository
         self.catalog_service = catalog_service
         self.connection_repository = connection_repository
+        self.profile_repository = profile_repository
+        self.disaster_event_repository = disaster_event_repository
 
     def list_checklist_rules(
         self,
         catalog: DisasterCatalog,
         disaster_type: str,
-        categories: list[ProtectedCategory],
+        protected_user_id: str,
     ) -> list[ChecklistRule]:
-        """재난 종류와 보호대상자 분류에 맞는 체크리스트 규칙을 조회한다."""
-        # 1. 카탈로그에서 해당 재난의 정의를 찾는다.
+        """현재 재난 상황과 보호대상자 프로필에 맞는 체크리스트 규칙을 조회한다."""
+        profile = self.profile_repository.get_protected_profile(protected_user_id)
+        active_events = self.disaster_event_repository.list_active_events(profile.region_code)
+        if not any(event.is_type(disaster_type) for event in active_events):
+            return []
+
         definition = catalog.find_definition(disaster_type)
         if not definition:
             return []
 
-        # 2. 도메인 모델에 위임하여 보호대상자 분류에 맞는 규칙 목록을 반환한다.
-        return definition.checklist_rules_for(categories)
+        return definition.checklist_rules_for(profile.categories)
 
     def record_completion(
         self,
