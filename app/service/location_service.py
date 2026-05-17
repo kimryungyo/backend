@@ -137,4 +137,14 @@ class LocationShareService:
 
     def share_for_help_request(self, guardian_user_id: str, protected_user_id: str) -> LocationShareRecord:
         """도움 요청 시 현재 위치를 즉시 보호자에게 공유한다."""
-        raise NotImplementedError
+        current_location = self.location_provider.get_current_location(protected_user_id)
+        share_record = LocationShareRecord(
+            share_id=uuid.uuid4().hex,
+            guardian_user_id=guardian_user_id,
+            protected_user_id=protected_user_id,
+            location=current_location,
+            reason="help_request",
+            shared_at=datetime.now(),
+        )
+        self.location_repository.save_share_record(share_record)
+        return share_record
