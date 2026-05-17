@@ -1,6 +1,6 @@
 """연결 요청, 수락, 거절, 해제 API를 담당한다."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_connection_service
 from app.dto.connection_dto import ConnectionRequestCreate, ConnectionRequestResponse, ConnectionResponse
@@ -46,4 +46,15 @@ def disconnect(
     service: ConnectionService = Depends(get_connection_service),
 ) -> None:
     """연결을 해제하고 해당 연결 관련 기록을 삭제한다."""
-    raise NotImplementedError
+    try:
+        service.disconnect(connection_id, requested_by_user_id)
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access this connection",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

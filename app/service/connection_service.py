@@ -116,11 +116,12 @@ class ConnectionService:
 
     def disconnect(self, connection_id: str, requested_by_user_id: str) -> None:
         """연결을 해제하고 해당 연결과 관련된 기록을 삭제한다."""
-        # 현재 ConnectionRepository 인터페이스에 get_connection이 없으므로, 
-        # 구현체나 도메인 로직 확장이 필요할 수 있으나 
-        # 우선 인터페이스에 정의된 delete 로직을 호출한다.
-        # 실제 운영 환경에서는 권한 확인(requested_by_user_id가 연결의 당사자인지)이 필요하다.
-        
-        # 임시로 모든 연결 목록에서 해당 connection_id를 찾아서 권한을 확인하는 로직을 고려할 수 있으나,
-        # Repository 인터페이스를 준수하여 삭제를 수행한다.
+        try:
+            connection = self.connection_repository.get_connection(connection_id)
+        except KeyError as exc:
+            raise ValueError(f"active connection not found: {connection_id}") from exc
+
+        if not connection.involves_user(requested_by_user_id):
+            raise PermissionError("requester is not a connection participant")
+
         self.connection_repository.delete_connection_and_related_records(connection_id)

@@ -21,6 +21,11 @@ class ConnectionRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_connection(self, connection_id: str) -> GuardianProtectedConnection:
+        """활성 연결을 조회한다."""
+        raise NotImplementedError
+
+    @abstractmethod
     def find_active_by_protected(self, protected_user_id: str) -> GuardianProtectedConnection | None:
         """보호대상자의 활성 연결을 조회한다."""
         raise NotImplementedError
