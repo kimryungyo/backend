@@ -119,6 +119,7 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
     location_share_service = LocationShareService(
         profile_repository,
         connection_repository,
+        user_repository,
         location_repository,
         location_provider_client,
         notification_service,

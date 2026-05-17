@@ -9,6 +9,7 @@ from app.external.location_provider_client import LocationProviderClient
 from app.repository.connection_repository import ConnectionRepository
 from app.repository.location_repository import LocationRepository
 from app.repository.profile_repository import ProfileRepository
+from app.repository.user_repository import UserRepository
 from app.service.notification_service import NotificationService
 
 LOCATION_REQUEST_TIMEOUT_MINUTES = 30
@@ -21,18 +22,39 @@ class LocationShareService:
         self,
         profile_repository: ProfileRepository,
         connection_repository: ConnectionRepository,
+        user_repository: UserRepository,
         location_repository: LocationRepository,
         location_provider: LocationProviderClient,
         notification_service: NotificationService,
     ) -> None:
         self.profile_repository = profile_repository
         self.connection_repository = connection_repository
+        self.user_repository = user_repository
         self.location_repository = location_repository
         self.location_provider = location_provider
         self.notification_service = notification_service
 
     def request_location(self, guardian_user_id: str, protected_user_id: str, requested_at: datetime) -> LocationRequest:
         """보호자가 보호대상자에게 위치 공유 요청을 보낸다."""
+        guardian = self.user_repository.find_by_id(guardian_user_id)
+        if not guardian:
+            raise ValueError(f"guardian user not found: {guardian_user_id}")
+        if not guardian.is_guardian():
+            raise ValueError(f"user {guardian_user_id} is not a guardian")
+
+        protected = self.user_repository.find_by_id(protected_user_id)
+        if not protected:
+            raise ValueError(f"protected user not found: {protected_user_id}")
+        if not protected.is_protected():
+            raise ValueError(f"user {protected_user_id} is not a protected user")
+
+        connection = self.connection_repository.find_active_by_protected(protected_user_id)
+        if not connection or not connection.connects(guardian_user_id, protected_user_id):
+            raise ValueError(
+                f"active connection not found between guardian {guardian_user_id} "
+                f"and protected user {protected_user_id}"
+            )
+
         request = LocationRequest(
             request_id=uuid.uuid4().hex,
             guardian_user_id=guardian_user_id,
