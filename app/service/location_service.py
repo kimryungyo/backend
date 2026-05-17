@@ -104,7 +104,36 @@ class LocationShareService:
 
     def auto_share_after_timeout(self, request_id: str, now: datetime) -> LocationShareRecord | None:
         """30분 미응답과 자동 공유 설정을 확인해 위치를 공유한다."""
-        raise NotImplementedError
+        request = self.location_repository.get_request(request_id)
+        if not request.is_pending() or not request.is_expired(now):
+            return None
+
+        protected_profile = self.profile_repository.get_protected_profile(request.protected_user_id)
+        connection = self.connection_repository.find_active_by_protected(request.protected_user_id)
+        can_auto_share = (
+            protected_profile.can_auto_share_location()
+            and connection is not None
+            and connection.connects(request.guardian_user_id, request.protected_user_id)
+        )
+        if not can_auto_share:
+            request.expire()
+            self.location_repository.save_request(request)
+            return None
+
+        current_location = self.location_provider.get_current_location(request.protected_user_id)
+        request.mark_auto_shared()
+        self.location_repository.save_request(request)
+
+        share_record = LocationShareRecord(
+            share_id=uuid.uuid4().hex,
+            guardian_user_id=request.guardian_user_id,
+            protected_user_id=request.protected_user_id,
+            location=current_location,
+            reason="auto_shared",
+            shared_at=now,
+        )
+        self.location_repository.save_share_record(share_record)
+        return share_record
 
     def share_for_help_request(self, guardian_user_id: str, protected_user_id: str) -> LocationShareRecord:
         """도움 요청 시 현재 위치를 즉시 보호자에게 공유한다."""
