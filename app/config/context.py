@@ -6,6 +6,7 @@ from app.config.settings import Settings
 from app.database.mysql import MySQLPool
 from app.external.concrete_clients import (
     EmptyDisasterInfoClient,
+    HttpDisasterInfoClient,
     KakaoOAuthHttpClient,
     NoopPushNotificationClient,
     UnavailableLocationProviderClient,
@@ -38,6 +39,7 @@ from app.service.auth_service import AuthService
 from app.service.checklist_service import ChecklistService
 from app.service.connection_service import ConnectionService
 from app.service.disaster_catalog_service import DisasterCatalogService
+from app.service.disaster_event_service import DisasterEventIngestionService
 from app.service.help_request_service import HelpRequestService
 from app.service.location_service import LocationShareService
 from app.service.notification_service import NotificationService
@@ -69,6 +71,7 @@ class AppContext:
     connection_service: ConnectionService | None = None  # 연결 서비스
     safety_check_service: SafetyCheckService | None = None  # 안부 확인 서비스
     disaster_catalog_service: DisasterCatalogService | None = None  # 재난 카탈로그 서비스
+    disaster_event_ingestion_service: DisasterEventIngestionService | None = None  # 재난 정보 수신 서비스
     checklist_service: ChecklistService | None = None  # 체크리스트 서비스
     action_guide_service: ActionGuideService | None = None  # 재난별 대처법 안내 서비스
     location_share_service: LocationShareService | None = None  # 위치 공유 서비스
@@ -83,7 +86,10 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
     kakao_oauth_client = KakaoOAuthHttpClient(settings)
     push_notification_client = NoopPushNotificationClient()
     location_provider_client = UnavailableLocationProviderClient()
-    disaster_info_client = EmptyDisasterInfoClient()
+    if settings.disaster_info_base_url:
+        disaster_info_client = HttpDisasterInfoClient(settings)
+    else:
+        disaster_info_client = EmptyDisasterInfoClient()
 
     user_repository = InMemoryUserRepository()
     profile_repository = InMemoryProfileRepository()
@@ -114,6 +120,13 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
         notification_service,
     )
     disaster_catalog_service = DisasterCatalogService(disaster_catalog_repository)
+    disaster_event_ingestion_service = DisasterEventIngestionService(
+        disaster_info_client,
+        disaster_event_repository,
+        profile_repository,
+        connection_repository,
+        notification_service,
+    )
     checklist_service = ChecklistService(
         checklist_repository,
         disaster_catalog_service,
@@ -154,6 +167,7 @@ def create_app_context(settings: Settings | None = None) -> AppContext:
         connection_service=connection_service,
         safety_check_service=safety_check_service,
         disaster_catalog_service=disaster_catalog_service,
+        disaster_event_ingestion_service=disaster_event_ingestion_service,
         checklist_service=checklist_service,
         action_guide_service=action_guide_service,
         location_share_service=location_share_service,

@@ -48,6 +48,46 @@ class UnavailableLocationProviderClient(LocationProviderClient):
         raise RuntimeError(f"location provider is not configured: {protected_user_id}")
 
 
+class HttpDisasterInfoClient(DisasterInfoClient):
+    """HTTP 기반 외부 재난 정보 API 클라이언트."""
+
+    def __init__(self, settings: Settings) -> None:
+        self._base_url = settings.disaster_info_base_url.rstrip("/")
+        self._active_events_path = settings.disaster_info_active_events_path
+
+    def fetch_active_events(self, region_code: str) -> list[DisasterEvent]:
+        """특정 지역의 현재 재난 상황 목록을 조회한다."""
+        if not self._base_url:
+            return []
+
+        response = httpx.get(
+            f"{self._base_url}{self._active_events_path}",
+            params={"region_code": region_code},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        items = payload.get("events", payload) if isinstance(payload, dict) else payload
+        return [self._to_event(item) for item in items]
+
+    def _to_event(self, item: dict[str, Any]) -> DisasterEvent:
+        """외부 API 응답 한 건을 내부 재난 이벤트로 변환한다."""
+        return DisasterEvent(
+            event_id=str(item["event_id"]),
+            disaster_type=str(item["disaster_type"]),
+            region_code=str(item["region_code"]),
+            alert_level=str(item["alert_level"]),
+            started_at=self._to_datetime(item["started_at"]),
+            ended_at=self._to_datetime(item["ended_at"]) if item.get("ended_at") else None,
+        )
+
+    def _to_datetime(self, value: str | datetime) -> datetime:
+        """ISO-8601 문자열 또는 datetime 값을 datetime으로 변환한다."""
+        if isinstance(value, datetime):
+            return value
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
 class EmptyDisasterInfoClient(DisasterInfoClient):
     """외부 재난 정보 API 연동 전까지 빈 재난 목록을 반환하는 client."""
 

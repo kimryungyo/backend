@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import uuid
 
 from app.domain.connection import ConnectionRequest
+from app.domain.disaster import DisasterEvent
 from app.domain.enums import NotificationType
 from app.domain.help_request import HelpRequestRecord
 from app.domain.location import LocationRequest
@@ -89,6 +90,24 @@ class NotificationService:
             notification_type=NotificationType.LOCATION_REQUEST,
             title="위치 공유 요청",
             body=f"{guardian_name}님이 현재 위치를 요청했습니다.",
+            created_at=datetime.now(timezone.utc),
+        )
+        self.notify(message)
+
+    def notify_disaster_alert(self, event: DisasterEvent, protected_user_id: str, guardian_user_id: str) -> None:
+        """보호대상자 지역의 긴급 재난을 보호자에게 알린다."""
+        protected = self.user_repository.find_by_id(protected_user_id)
+        protected_name = protected.name if protected else "보호대상자"
+
+        message = NotificationMessage(
+            notification_id=uuid.uuid4().hex,
+            receiver_user_id=guardian_user_id,
+            notification_type=NotificationType.DISASTER_ALERT,
+            title="긴급 재난 알림",
+            body=(
+                f"{protected_name}님 지역에 {event.disaster_type} "
+                f"{event.alert_level} 경보가 발생했습니다. 안전을 확인해 주세요."
+            ),
             created_at=datetime.now(timezone.utc),
         )
         self.notify(message)

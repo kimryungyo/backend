@@ -39,4 +39,10 @@ class Settings(BaseSettings):
 
     push_provider_name: str = Field(default="stub", description="푸시 알림 제공자 이름")
 
+    disaster_info_base_url: str = Field(default="", description="외부 재난 정보 API 기본 URL")
+    disaster_info_active_events_path: str = Field(
+        default="/disasters/events/active",
+        description="외부 재난 정보 API 현재 재난 조회 경로",
+    )
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

@@ -194,6 +194,14 @@ class InMemoryProfileRepository(ProfileRepository):
         """보호대상자 프로필을 저장한다."""
         self._protected_profiles[profile.user_id] = profile
 
+    def list_protected_profiles_by_region(self, region_code: str) -> list[ProtectedProfile]:
+        """지정 지역의 보호대상자 프로필 목록을 조회한다."""
+        return [
+            profile
+            for profile in self._protected_profiles.values()
+            if profile.region_code == region_code
+        ]
+
     def get_guardian_profile(self, user_id: str) -> GuardianProfile:
         """보호자 프로필을 조회한다."""
         return self._guardian_profiles[user_id]
