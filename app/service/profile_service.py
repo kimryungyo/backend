@@ -31,7 +31,7 @@ class ProfileService:
                 user_id=protected_user_id,
                 categories=categories,
                 region_code=region_code,
-                auto_location_share_enabled=False,
+                auto_location_share_enabled=True,
                 updated_at=datetime.now(timezone.utc),
             )
 
